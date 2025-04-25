@@ -1,0 +1,147 @@
+#!/bin/bash
+
+if [ $# -lt 2 ] || [ $# -gt 4 ] ; then
+    echo "Usage: $0 syscall image_path <flags>"
+    exit 1
+fi
+
+syscall=$1
+image_path=$2
+
+POSITIONAL=()
+qemu=~/qemu_ECPT/build/qemu-system-x86_64
+log_name="syscall_logs/${syscall}_ecpt.log"
+set -x 
+
+# # important comment here: don't replace the semicolon with space. bash system will screw it up.
+# # https://stackoverflow.com/questions/59314359/bash-script-execute-command-with-double-quotes-single-quotes-and-spaces
+# qemu_arg+='"init=/bin/sh console=ttyS0,115200" '
+# qemu_arg+="-d mmu -D mmu.log "
+# qemu_arg+=""
+
+
+# each argument that should be neccesarily seperated by space should be in a sperate "" item. 
+# every thing within the comment will be treated as pure literal.  
+
+if [ "$syscall" == "bpf" ] || [ "$syscall" == "fadvise" ] || [ "$syscall" == "futex" ] || [ "$syscall" == "ioprio" ] || [ "$syscall" == "timerfd" ]; then
+    # a few edge cases
+    pattern="${syscall}"
+elif [ "$syscall" == "pkeys" ]; then
+    # weirdo
+    pattern="pkey"
+elif [ "$syscall" == "ioctl" ] || 
+    [ "$syscall" == "clone3" ] || 
+    [ "$syscall" == "dup2" ] || 
+    [ "$syscall" == "faccessat2" ] || 
+    [ "$syscall" == "mlock2" ] || 
+    [ "$syscall" == "openat2" ] || 
+    [ "$syscall" == "preadv2" ] || 
+    [ "$syscall" == "pwritev2" ] ||
+    [ "$syscall" == "renameat2" ] || 
+    [ "$syscall" == "wait4" ] ||
+    [ "$syscall" == "futex_wake04" ]; then
+    # ioctl_loop01, ioctl_ns01 ...
+    pattern="^${syscall}"
+elif [ "$syscall" == "clock_gettime" ]; then
+    # leapsec or clock_gettime ...
+    pattern="${syscall}\|leapsec"
+elif [ "$syscall" == "mmap" ]; then
+    # mmap or qmm ...
+    pattern="${syscall}\|qmm"
+elif [ "$syscall" == "mmap" ]; then
+    # mmap or qmm ...
+    pattern="${syscall}\|qmm"
+elif [ "$syscall" == "clone" ] || 
+    [ "$syscall" == "dup" ] || 
+    [ "$syscall" == "faccessat" ] || 
+    [ "$syscall" == "mlock" ] || 
+    [ "$syscall" == "openat" ] || 
+    [ "$syscall" == "preadv" ] || 
+    [ "$syscall" == "pwritev" ] || 
+    [ "$syscall" == "renameat" ] || 
+    [ "$syscall" == "wait" ] ; then
+    # pattern="^${syscall}[0-9][0-9]$/"
+    # match two digit for exact
+    # but with _64 as optional suffix
+    pattern="^$syscall[0-9][0-9]\(_64\)\{0,1\}\b"
+
+elif [[ $syscall =~ [0-9]$ ]]; then
+    # "Last character is a digit"
+    # somthing like accept4_01
+    pattern="^${syscall}_[0-9][0-9][0-9]*"
+else
+    # "Last character is not a digit"
+    # somthing like accept01
+    pattern="^${syscall}[0-9][0-9][0-9]*"
+    # pattern="^${syscall}"
+fi
+
+cat /home/siyuan/rethinkVM_bench/ltp/runtest/syscalls | grep "$pattern"
+
+PROLOGUE="mount -t proc proc /proc; mount -t sysfs none /sys; mkdir /dev/pts; mount devpts /dev/pts -t devpts; mkdir /dev/shm; mount -t tmpfs shm /dev/shm; touch /etc/hosts; cd /opt/ltp/; busybox ifconfig eth0 127.0.0.1; busybox ip route add 224.0.0.0/4 dev eth0; busybox ifconfig lo 127.0.0.1; "
+START_COMMAND="export KCONFIG_PATH=/boot/config-5.15-gen-ecpt; export LTP_TIMEOUT_MUL=50; ./runltp -f syscalls -s \"$pattern\" -l ${syscall}-result.log -p; "
+EPILOGUE="sync; sleep 5; /shutdown;"
+# START_COMMAND="mount -t proc proc /proc; cd /opt/ltp/; ./run_one_test.sh $1; sync; sleep 5;"
+
+qemu_args=(
+	"$qemu"
+	"-kernel" "arch/x86/boot/bzImage" 
+	# "-m" "256M"
+	"-m" "8192M"
+	"-display" "none"
+	"-boot" "c"
+	"-no-reboot" # exit at roboot. When kernel panic, set panic=-1 to reboot, and then qemu will automatically quit.
+	# This is a simplified FS with only the necessary files for booting and benchmark for testing
+	# Unfortunately, we didn't save the command to reach this status, so this is hard to be regenerated from source.
+	# "-hda" "image_full.ext4"
+	"-hda" "$image_path"
+	# "-hda" "../targets/ubuntu_22.04/image.ext4"
+	# "-hda" "rootfs.ext4"
+	# "-initrd" "ramdisk.img"
+	"-serial" "stdio"
+	"-append" "root=/dev/sda rootdelay=5 nokaslr rootfstype=ext4 rw console=ttyS0,115200 earlyprintk=serial,ttyS0,115200 apic=verbose panic=-1 transparent_hugepage=never init=/usr/bin/bash -- -c \"$PROLOGUE $START_COMMAND $EPILOGUE /usr/bin/bash\" "
+
+	# "-append" "root=/dev/sda rootdelay=5 rootfstype=ext4 rw console=ttyS0,115200 earlyprintk=serial,ttyS0,115200 apic=verbose init=/usr/bin/bash -- run_one_test.sh execve"
+	# "-append" "root=/dev/sda rootdelay=10 rootfstype=ext4 rw console=ttyS0,115200 earlyprintk=serial,ttyS0,115200 apic=verbose init=/usr/bin/bash -- /test_helper.sh"
+	# "-append" "init=/bin/sh console=ttyS0,115200 earlyprintk=serial,ttyS0,115200"
+#	"-append" "init=/bin/sh console=ttyS0,115200 earlyprintk=dbgp"
+    # "-nographic"
+	)
+
+
+while [[ $# -gt 0 ]]; do
+  	key="$3"
+
+  	case $key in
+    	--gdb)
+      		qemu_args+=("-s" "-S")
+      		shift # past value
+      		;;
+		--mmu)
+			qemu_args+=("-d" "mmu" "-D" "mmu.log")
+      		shift # past value
+      		;;
+    	--default)
+      		DEFAULT=YES
+      		shift # past argument
+      		;;
+    	*)    # unknown option
+      		POSITIONAL+=("$1") # save it in an array for later
+      		shift # past argument
+      		;;
+  esac
+done
+
+tee_args+=("tee" "$log_name")
+
+
+# the command printed below can be copied into bash command and run without modification
+# printf '%q ' "${qemu_args[@]}" 
+# # "|" needs to be %s. with %q it will printed with escape
+# printf '%s ' "|" 
+# printf '%q ' "${tee_args[@]}"
+# echo
+
+# "${qemu_args[@]}" | "${tee_args[@]}"
+
+"${qemu_args[@]}" 2>&1 | "${tee_args[@]}"

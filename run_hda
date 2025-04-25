@@ -1,0 +1,47 @@
+#!/bin/bash
+
+if [ $# -ne 6 ]; then 
+	echo "Usage: $0 <arch> <bench> <thp conf> <image> <output log path> <dry>" 
+	exit 1
+fi 
+
+ARCH=$1
+bench_torun="simulation/$2.sh 2" 
+thp_config=$3
+image=$4
+log_name=$5
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+dry_run=$6
+
+POSITIONAL=()
+if [ $ARCH == "ecpt" ]; then 
+	qemu=${SCRIPT_DIR}/../qemu_ECPT/build/qemu-system-x86_64
+else 
+	qemu=${SCRIPT_DIR}/../qemu_x86/build/qemu-system-x86_64
+fi 
+
+# set -x 
+
+START_COMMAND="cd rethinkVM_bench; ./run_scripts/${bench_torun};"
+EPILOGUE="sync; sleep 5; /shutdown;"
+# each argument that should be neccesarily seperated by space should be in a sperate "" item. 
+# every thing within the comment will be treated as pure literal.  
+qemu_args=(
+	"$qemu"
+	"-kernel" "arch/x86/boot/bzImage" 
+	"-m" "131072M"
+	"-display" "none"
+	"-boot" "c"
+	"-hda" $image
+	"-icount" "shift=0"
+	"-serial" "stdio"
+	"-append" "root=/dev/sda rw rootdelay=4 rootfstype=ext4 console=ttyS0,115200 earlyprintk=serial,ttyS0,115200 apic=verbose transparent_hugepage=${thp_config} init=/usr/bin/bash -- -c \"$START_COMMAND $EPILOGUE /usr/bin/bash\""
+)
+
+tee_args+=("tee" "$log_name")
+
+if [ ${dry_run} == "false" ]; then 
+	"${qemu_args[@]}" 2>&1 | "${tee_args[@]}"
+else 
+	echo "${qemu_args[@]} ${tee_args[@]}"
+fi

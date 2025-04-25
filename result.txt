@@ -1,0 +1,390 @@
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/arch/x86/kvm/mmu/mmu.c
+----------------------------------------------------
+
+In file included from arch/x86/kvm/mmu/mmu.c:27:
+arch/x86/kvm/mmu/spte.h:318:9: error: use of bitwise '|' with boolean operands [-Werror,-Wbitwise-instead-of-logical]
+        return __is_bad_mt_xwr(rsvd_check, spte) |
+               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                                 ||
+arch/x86/kvm/mmu/spte.h:318:9: note: cast one or both operands to int to silence this warning
+0 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/arch/x86/mm/ECPT_CWT.c
+----------------------------------------------------
+
+arch/x86/mm/ECPT_CWT.c:981:17: warning: unused function 'check_cwt_detail_way' [-Wunused-function]
+static uint32_t check_cwt_detail_way (ECPT_desc_t *ecpt, uint32_t way)
+                ^
+arch/x86/mm/ECPT_CWT.c:830:12: warning: unused function 'cwt_clear_4K_ECPT' [-Wunused-function]
+static int cwt_clear_4K_ECPT(ECPT_desc_t *ecpt, uint64_t vaddr) 
+           ^
+0 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/arch/x86/mm/pat/set_memory.c
+----------------------------------------------------
+
+
+Match #1:
+
+arch/x86/mm/pat/set_memory.c:1628:3: note: "root" binds here
+                pte++;
+                ^~~~~
+
+Match #2:
+
+arch/x86/mm/pat/set_memory.c:1660:3: note: "root" binds here
+                pmd++;
+                ^~~~~
+`
+Match #3:
+
+arch/x86/mm/pat/set_memory.c:1673:3: note: "root" binds here
+                pmd++;
+                ^~~~~
+
+Match #4:
+
+arch/x86/mm/pat/set_memory.c:1704:3: note: "root" binds here
+                pud++;
+                ^~~~~
+
+Match #5:
+
+arch/x86/mm/pat/set_memory.c:1718:3: note: "root" binds here
+                pud++;
+                ^~~~~
+
+Match #6:
+
+arch/x86/mm/pat/set_memory.c:1768:3: note: "root" binds here
+                pte++;
+                ^~~~~
+
+Match #7:
+
+arch/x86/mm/pat/set_memory.c:1902:3: note: "root" binds here
+                pud++;
+                ^~~~~
+7 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/arch/x86/mm/init_64.c
+----------------------------------------------------
+
+
+Match #1:
+
+arch/x86/mm/init_64.c:520:43: note: "root" binds here
+        for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
+                                                 ^~~~~
+
+Match #2:
+
+arch/x86/mm/init_64.c:1222:34: note: "root" binds here
+        for (; addr < end; addr = next, pte++) {
+                                        ^~~~~
+
+Match #3:
+
+arch/x86/mm/init_64.c:1265:34: note: "root" binds here
+        for (; addr < end; addr = next, pmd++) {
+                                        ^~~~~
+
+Match #4:
+
+arch/x86/mm/init_64.c:1314:34: note: "root" binds here
+        for (; addr < end; addr = next, pud++) {
+                                        ^~~~~
+
+Match #5:
+
+arch/x86/mm/init_64.c:1348:34: note: "root" binds here
+        for (; addr < end; addr = next, p4d++) {
+                                        ^~~~~
+5 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/arch/x86/mm/ECPT.c
+----------------------------------------------------
+
+arch/x86/mm/ECPT.c:379:15: warning: address of array 'entry->pte' will always evaluate to 'true' [-Wpointer-bool-conversion]
+        if (!(entry->pte)) {
+            ~ ~~~~~~~^~~
+arch/x86/mm/ECPT.c:969:13: warning: unused function 'ecpt_kernel_copy' [-Wunused-function]
+static void ecpt_kernel_copy(ECPT_desc_t *dest, ECPT_desc_t *src)
+            ^
+arch/x86/mm/ECPT.c:2819:21: warning: unused variable 'load_funcs' [-Wunused-variable]
+static load_cr_func load_funcs[ECPT_MAX_WAY] = {
+                    ^
+arch/x86/mm/ECPT.c:2827:21: warning: unused variable 'read_cr_funcs' [-Wunused-variable]
+static read_cr_func read_cr_funcs[ECPT_MAX_WAY] = {
+                    ^
+0 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/mincore.c
+----------------------------------------------------
+
+
+Match #1:
+
+mm/mincore.c:130:22: note: "root" binds here
+        for (; addr != end; ptep++, addr += PAGE_SIZE) {
+                            ^~~~~~
+1 match.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/memory.c
+----------------------------------------------------
+
+mm/memory.c:835:9: warning: unused variable 'p4d' [-Wunused-variable]
+        p4d_t *p4d = p4d_offset_map_with_mm(vma->vm_mm, pgd, addr);
+               ^
+mm/memory.c:836:9: warning: unused variable 'pud' [-Wunused-variable]
+        pud_t *pud = pud_offset_map_with_mm(vma->vm_mm, p4d, addr);
+               ^
+mm/memory.c:834:9: warning: unused variable 'pgd' [-Wunused-variable]
+        pgd_t *pgd = pgd_offset_map_with_mm(vma->vm_mm, addr);
+               ^
+
+Match #1:
+
+mm/memory.c:3986:14: note: "root" binds here
+                                err = fn(pte++, addr, data);
+                                         ^~~~~
+
+Match #2:
+
+mm/memory.c:4038:11: note: "root" binds here
+        } while (pmd++, addr = next, addr != end);
+                 ^~~~~
+
+Match #3:
+
+mm/memory.c:4079:11: note: "root" binds here
+        } while (pud++, addr = next, addr != end);
+                 ^~~~~
+
+Match #4:
+
+mm/memory.c:4120:11: note: "root" binds here
+        } while (p4d++, addr = next, addr != end);
+                 ^~~~~
+
+Match #5:
+
+mm/memory.c:4160:11: note: "root" binds here
+        } while (pgd++, addr = next, addr != end);
+                 ^~~~~
+5 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/sparse-vmemmap.c
+----------------------------------------------------
+
+
+Match #1:
+
+mm/sparse-vmemmap.c:105:3: note: "root" binds here
+                pte++;
+                ^~~~~
+
+Match #2:
+
+mm/sparse-vmemmap.c:109:41: note: "root" binds here
+        for (; addr != end; addr += PAGE_SIZE, pte++) {
+                                               ^~~~~
+
+Match #3:
+
+mm/sparse-vmemmap.c:137:11: note: "root" binds here
+        } while (pmd++, addr = next, addr != end);
+                 ^~~~~
+
+Match #4:
+
+mm/sparse-vmemmap.c:157:11: note: "root" binds here
+        } while (pud++, addr = next, addr != end);
+                 ^~~~~
+
+Match #5:
+
+mm/sparse-vmemmap.c:177:11: note: "root" binds here
+        } while (p4d++, addr = next, addr != end);
+                 ^~~~~
+
+Match #6:
+
+mm/sparse-vmemmap.c:202:11: note: "root" binds here
+        } while (pgd++, addr = next, addr != end);
+                 ^~~~~
+6 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/swap_state.c
+----------------------------------------------------
+
+
+Match #1:
+
+mm/swap_state.c:808:12: note: "root" binds here
+             i++, pte++) {
+                  ^~~~~
+1 match.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/swapfile.c
+----------------------------------------------------
+
+
+Match #1:
+
+mm/swapfile.c:2008:11: note: "root" binds here
+        } while (pte++, addr += PAGE_SIZE, addr != end);
+                 ^~~~~
+
+Match #2:
+
+mm/swapfile.c:2044:11: note: "root" binds here
+        } while (pmd++, addr = next, addr != end);
+                 ^~~~~
+
+Match #3:
+
+mm/swapfile.c:2070:11: note: "root" binds here
+        } while (pud++, addr = next, addr != end);
+                 ^~~~~
+
+Match #4:
+
+mm/swapfile.c:2096:11: note: "root" binds here
+        } while (p4d++, addr = next, addr != end);
+                 ^~~~~
+
+Match #5:
+
+mm/swapfile.c:2125:11: note: "root" binds here
+        } while (pgd++, addr = next, addr != end);
+                 ^~~~~
+5 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/mempolicy.c
+----------------------------------------------------
+
+
+Match #1:
+
+mm/mempolicy.c:529:22: note: "root" binds here
+        for (; addr != end; pte++, addr += PAGE_SIZE) {
+                            ^~~~~
+1 match.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/hugetlb.c
+----------------------------------------------------
+
+mm/hugetlb.c:6042:9: warning: unused variable 'pgd' [-Wunused-variable]
+        pgd_t *pgd = pgd_offset_map_with_mm(mm, *addr);
+               ^
+mm/hugetlb.c:6043:9: warning: unused variable 'p4d' [-Wunused-variable]
+        p4d_t *p4d = p4d_offset_map_with_mm(mm, pgd, *addr);
+               ^
+0 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/migrate.c
+----------------------------------------------------
+
+
+Match #1:
+
+mm/migrate.c:2319:40: note: "root" binds here
+        for (; addr < end; addr += PAGE_SIZE, ptep++) {
+                                              ^~~~~~
+1 match.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/khugepaged.c
+----------------------------------------------------
+
+
+Match #1:
+
+mm/khugepaged.c:583:9: note: "root" binds here
+        while (--_pte >= pte) {
+               ^~~~~~
+1 match.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/hmm.c
+----------------------------------------------------
+
+
+Match #1:
+
+mm/hmm.c:403:40: note: "root" binds here
+        for (; addr < end; addr += PAGE_SIZE, ptep++, hmm_pfns++) {
+                                              ^~~~~~
+1 match.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/memcontrol.c
+----------------------------------------------------
+
+
+Match #1:
+
+mm/memcontrol.c:5822:22: note: "root" binds here
+        for (; addr != end; pte++, addr += PAGE_SIZE)
+                            ^~~~~
+
+Match #2:
+
+mm/memcontrol.c:6048:19: note: "root" binds here
+                pte_t ptent = *(pte++);
+                                ^~~~~
+2 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/fs/proc/task_mmu.c
+----------------------------------------------------
+
+
+Match #1:
+
+fs/proc/task_mmu.c:598:22: note: "root" binds here
+        for (; addr != end; pte++, addr += PAGE_SIZE)
+                            ^~~~~
+
+Match #2:
+
+fs/proc/task_mmu.c:1159:22: note: "root" binds here
+        for (; addr != end; pte++, addr += PAGE_SIZE) {
+                            ^~~~~
+
+Match #3:
+
+fs/proc/task_mmu.c:1854:11: note: "root" binds here
+        } while (pte++, addr += PAGE_SIZE, addr != end);
+                 ^~~~~
+3 matches.

@@ -1,0 +1,25 @@
+#!/usr/bin/expect -f
+
+# Wait enough (forever) until a long-time boot
+set timeout -1
+
+set DUMP_TRANS_MSR "0x4040"
+
+# set BENCH_SCRIPT [lindex $argv 0]
+
+# Start the guest VM
+spawn ./run_x86_hda --mmu
+
+expect "# "
+
+# enable address translation dumping
+send "wrmsr -p 0 $DUMP_TRANS_MSR 1\n"
+
+expect "# "
+send "./mem_test\n"
+
+expect "# "
+# disable address translation dumping
+send "wrmsr -p 0 $DUMP_TRANS_MSR 0\n"
+expect "# "
+send "shutdown -h now"

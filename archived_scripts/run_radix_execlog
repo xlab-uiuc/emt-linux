@@ -1,0 +1,157 @@
+#!/bin/bash
+set -x
+
+POSITIONAL=()
+qemu=../qemu_x86/build/qemu-system-x86_64
+
+qemu_plugin_addrdump=../qemu_x86/build/tests/plugin/libexeclog.so
+# change to /data1/walk_log.bin to avoid moving data across partitions
+
+log_name=x86.log
+
+image_path=""
+DEFAULT_IMAGE_PATH=$(realpath ../image.ext4)
+
+addrdump_bin_record=""
+BIN_RECORD_DEFAULT="walk_log.bin"
+
+thp_config=""
+THP_DEFAULT="never"
+
+gdb_flags=()
+logging_flags=()
+
+bench_torun=""
+BENCH_DEFAULT="graphbig_bfs.sh"
+
+k_exec_only_val="0"
+# TODO: change the script that
+while [[ $# -gt 0 ]]; do
+	key="$1"
+
+	case $key in
+	--thp)
+		if [[ $# -gt 1 ]]; then
+			thp_config="$2"
+			shift 2
+		else
+			echo "Option --thp requires an argument. Default is $THP_DEFAULT"
+			exit 1
+		fi
+		;;
+	--bench)
+		if [[ $# -gt 1 ]]; then
+			bench_torun="$2"
+			shift 2
+		else
+			echo "Option --thp requires an argument. Default is $BENCH_DEFAULT"
+			exit 1
+		fi
+		;;
+	--out)
+		if [[ $# -gt 1 ]]; then
+			addrdump_bin_record="$2"
+			log_name="${addrdump_bin_record}.log"
+			shift 2
+		else
+			echo "Option --out requires an argument. Default is $BIN_RECORD_DEFAULT"
+			exit 1
+		fi
+		;;
+	--image)
+		if [[ $# -gt 1 ]]; then
+			image_path="$2"
+			shift 2
+		else
+			echo "Option --image requires an argument. Default is $DEFAULT_IMAGE_PATH"
+			exit 1
+		fi
+		;;
+	--k_exec_only)
+		k_exec_only_val="1"
+		shift # past value
+		;;
+	--gdb)
+		gdb_flags+=("-s" "-S")
+		shift # past value
+		;;
+	--mmu)
+		# qemu_args+=("-d" "mmu" "-D" "mmu.log")
+		# qemu_args+=("-d" "plugin" "-D" "mmu.log")
+		logging_flags+=("-d" "mmu" "-D" "mmu.log")
+		# logging_flags+=("-d" "plugin,int,exec,in_asm,op_opt,out_asm" "-D" "mmu.log")
+		shift # past value
+		;;
+	--default)
+		DEFAULT=YES
+		shift # past argument
+		;;
+	*)                  # unknown option
+		POSITIONAL+=("$1") # save it in an array for later
+		shift              # past argument
+		;;
+	esac
+done
+
+if [ "$thp_config" = "" ]; then
+	thp_config="$THP_DEFAULT"
+fi
+
+if [ "$addrdump_bin_record" = "" ]; then
+	addrdump_bin_record="$BIN_RECORD_DEFAULT"
+fi
+
+if [ "$image_path" = "" ]; then
+	image_path="$DEFAULT_IMAGE_PATH"
+fi
+
+if [ "$bench_torun" = "" ]; then
+	bench_torun="$BENCH_DEFAULT"
+fi
+
+
+# START_COMMAND="./mem_test"
+START_COMMAND="cd rethinkVM_bench; ./run_scripts/${bench_torun};"
+EPILOGUE="sync; sleep 5; /shutdown;"
+# each argument that should be neccesarily seperated by space should be in a sperate "" item.
+# every thing within the comment will be treated as pure literal.
+qemu_args=(
+	"$qemu"
+	"-kernel" "arch/x86/boot/bzImage"
+	"-m" "102400M"
+	"-display" "none"
+	"-hda" "${image_path}"
+	# "-drive" "file=/ubuntu22.04/image_full.ext4,format=raw"
+	# "-serial" "pipe:${PIPE_FILE_NAME}"
+	"-serial" "stdio"
+	"-icount" "shift=0" # icount mode to run with VM timing
+	"-append" "root=/dev/sda rw rootdelay=10 rootfstype=ext4 console=ttyS0,115200 earlyprintk=serial,ttyS0,115200 apic=verbose transparent_hugepage=${thp_config} init=/usr/bin/bash -- -c \"$START_COMMAND $EPILOGUE /usr/bin/bash\""
+	"-plugin" "${qemu_plugin_addrdump},filename=${addrdump_bin_record},k_exec_only=${k_exec_only_val}"
+	# "--trace" "guest_mem_before_exec"
+	# "-append" "init=/bin/sh console=ttyS0,115200 root=/dev/sda earlyprintk=serial,ttyS0,115200 apic=verbose"
+	# "-append" "init=/bin/sh console=ttyS0,115200 earlyprintk=serial,ttyS0,115200"
+	#	"-append" "init=/bin/sh console=ttyS0,115200 earlyprintk=dbgp"
+	# "-d" "mmu" "-D" "mmu.log"
+	# "-nographic"
+	# "-singlestep"
+)
+
+
+qemu_args+=("${gdb_flags[@]}")
+qemu_args+=("${logging_flags[@]}")
+
+
+tee_args+=("tee" "$log_name")
+
+# the command printed below can be copied into bash command and run without modification
+printf '%q ' "${qemu_args[@]}"
+# "|" needs to be %s. with %q it will printed with escape
+printf '%s ' "|"
+printf '%q ' "${tee_args[@]}"
+echo
+
+head_hash="$(git log -n 1 --pretty=format:"%h")"
+time=$(date -r vmlinux +"%Y-%m-%d-%H-%M-%S")
+cp vmlinux ${addrdump_bin_record}.vmlinux-${time}-${head_hash}
+
+"${qemu_args[@]}" 2>&1 | "${tee_args[@]}"

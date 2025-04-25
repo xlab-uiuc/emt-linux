@@ -1,0 +1,283 @@
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/include/linux/pgtable.h
+----------------------------------------------------
+
+Jiyuan note: also please take a look at pmd_offset and pud_offset in this file, sometime they invoked without ECPT #ifdef
+For example: in arch/x86/mm/init_64.c:1330 / in kernel/events/core.c:7227
+
+Match #6:
+
+./include/linux/pgtable.h:131:10: note: "root" binds here
+        return (pgd + pgd_index(address));
+                ^~~~~~~~~~~~~~~~~~~~~~~~
+6 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/arch/x86/mm/init_64.c
+----------------------------------------------------
+
+Match #7:
+
+arch/x86/mm/ident_map.c:72:16: note: "root" binds here
+                pmd_t *pmd = pmd_page + pmd_index(addr);
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #8:
+
+arch/x86/mm/ident_map.c:87:16: note: "root" binds here
+                pud_t *pud = pud_page + pud_index(addr);
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #9:
+
+arch/x86/mm/ident_map.c:128:16: note: "root" binds here
+                p4d_t *p4d = p4d_page + p4d_index(addr);
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #10:
+
+arch/x86/mm/ident_map.c:174:16: note: "root" binds here
+                pgd_t *pgd = pgd_page + pgd_index(addr);
+                             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #11:
+
+arch/x86/mm/init_64.c:390:15: note: "root" binds here
+        p4d_t *p4d = p4d_page + p4d_index(vaddr);
+                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #12:
+
+arch/x86/mm/init_64.c:398:15: note: "root" binds here
+        pud_t *pud = pud_page + pud_index(vaddr);
+                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #13:
+
+arch/x86/mm/init_64.c:1165:9: note: "root" binds here
+                pte = pte_start + i;
+                      ^~~~~~~~~~~~~
+
+Match #14:
+
+arch/x86/mm/init_64.c:1183:9: note: "root" binds here
+                pmd = pmd_start + i;
+                      ^~~~~~~~~~~~~
+
+Match #15:
+
+arch/x86/mm/init_64.c:1201:9: note: "root" binds here
+                pud = pud_start + i;
+                      ^~~~~~~~~~~~~
+
+Match #16:
+
+arch/x86/mm/init_64.c:1221:8: note: "root" binds here
+        pte = pte_start + pte_index(addr);
+              ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #17:
+
+arch/x86/mm/init_64.c:1264:8: note: "root" binds here
+        pmd = pmd_start + pmd_index(addr);
+              ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #18:
+
+arch/x86/mm/init_64.c:1313:8: note: "root" binds here
+        pud = pud_start + pud_index(addr);
+              ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #19:
+
+arch/x86/mm/init_64.c:1347:8: note: "root" binds here
+        p4d = p4d_start + p4d_index(addr);
+              ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+19 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/arch/x86/platform/efi/efi_64.c
+----------------------------------------------------
+
+Match #7:
+
+arch/x86/platform/efi/efi_64.c:80:8: note: "root" binds here
+        pgd = efi_pgd + pgd_index(EFI_VA_END);
+              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #8:
+
+arch/x86/platform/efi/efi_64.c:115:12: note: "root" binds here
+        pgd_efi = efi_pgd + pgd_index(PAGE_OFFSET);
+                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #9:
+
+arch/x86/platform/efi/efi_64.c:121:12: note: "root" binds here
+        pgd_efi = efi_pgd + pgd_index(EFI_VA_END);
+                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+9 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/mincore.c
+----------------------------------------------------
+
+Match #7:
+
+mm/mincore.c:159:19: note: "root" binds here
+        pte_unmap_unlock(ptep - 1, ptl);
+                         ^~~~~~~~
+
+7 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/mprotect.c
+----------------------------------------------------
+
+Match #7:
+
+mm/mprotect.c:211:19: note: "root" binds here
+        pte_unmap_unlock(pte - 1, ptl);
+                         ^~~~~~~
+
+7 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/mremap.c
+----------------------------------------------------
+
+Match #7:
+
+mm/mremap.c:304:12: note: "root" binds here
+        pte_unmap(new_pte - 1);
+                  ^~~~~~~~~~~
+
+
+Match #8:
+
+mm/mremap.c:305:19: note: "root" binds here
+        pte_unmap_unlock(old_pte - 1, old_ptl);
+                         ^~~~~~~~~~~
+
+8 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/swapfile.c
+----------------------------------------------------
+
+Match #7:
+
+mm/swapfile.c:2009:12: note: "root" binds here
+        pte_unmap(pte - 1);
+                  ^~~~~~~
+
+7 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/migrate.c
+----------------------------------------------------
+
+Match #7:
+
+mm/migrate.c:2436:19: note: "root" binds here
+        pte_unmap_unlock(ptep - 1, ptl);
+                         ^~~~~~~~
+
+7 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/hmm.c
+----------------------------------------------------
+
+Match #7:
+
+mm/hmm.c:412:12: note: "root" binds here
+        pte_unmap(ptep - 1);
+                  ^~~~~~~~
+
+7 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/mm/memcontrol.c
+----------------------------------------------------
+
+Match #7:
+
+mm/memcontrol.c:5825:19: note: "root" binds here
+        pte_unmap_unlock(pte - 1, ptl);
+                         ^~~~~~~
+
+
+Match #8:
+
+mm/memcontrol.c:6095:19: note: "root" binds here
+        pte_unmap_unlock(pte - 1, ptl);
+                         ^~~~~~~
+
+8 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/fs/proc/task_mmu.c
+----------------------------------------------------
+
+Match #7:
+
+fs/proc/task_mmu.c:600:19: note: "root" binds here
+        pte_unmap_unlock(pte - 1, ptl);
+                         ^~~~~~~
+
+
+Match #8:
+
+fs/proc/task_mmu.c:1179:19: note: "root" binds here
+        pte_unmap_unlock(pte - 1, ptl);
+                         ^~~~~~~
+
+8 matches.
+
+
+----------------------------------------------------
+/disk/ssd1/linux_gen_ECPT/arch/x86/power/hibernate_64.c
+----------------------------------------------------
+
+Match #7:
+
+arch/x86/power/hibernate_64.c:68:10: note: "root" binds here
+        set_pmd(pmd + pmd_index(restore_jump_address),
+        ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #8:
+
+arch/x86/power/hibernate_64.c:70:10: note: "root" binds here
+        set_pud(pud + pud_index(restore_jump_address),
+        ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #9:
+
+arch/x86/power/hibernate_64.c:76:11: note: "root" binds here
+                set_p4d(p4d + p4d_index(restore_jump_address), new_p4d);
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #10:
+
+arch/x86/power/hibernate_64.c:77:11: note: "root" binds here
+                set_pgd(pgd + pgd_index(restore_jump_address), new_pgd);
+                ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Match #11:
+
+arch/x86/power/hibernate_64.c:81:11: note: "root" binds here
+                set_pgd(pgd + pgd_index(restore_jump_address), new_pgd);
+                ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+11 matches.

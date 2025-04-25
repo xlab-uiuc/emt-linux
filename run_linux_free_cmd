@@ -1,0 +1,349 @@
+#!/bin/bash
+# set -x
+
+POSITIONAL=()
+
+arch=""
+
+log_name=""
+
+image_path=$(realpath ../image.ext4)
+
+addrdump_bin_record="walk_log.bin"
+
+thp_config="never"
+
+gdb_flags=()
+logging_flags=()
+
+k_exec_only_val="0"
+
+command=""
+
+VM_SERVER_PORT=2024
+HOST_SERVER_PORT=12024
+
+VM_LOGGING_CTL_PORT=2025
+HOST_LOGGING_CTL_PORT=12025
+
+RUN_DYNAMORIO=false
+
+max_qemu_user_inst=2000000000
+
+LINUX_DIR=$(pwd)
+
+DRY_RUN=false
+
+# TODO: change the script that
+while [[ $# -gt 0 ]]; do
+	key="$1"
+
+	case $key in
+	--arch)
+		if [[ $# -gt 1 ]]; then
+			arch="$2"
+			shift 2
+		else
+			echo "Option --arch requires an argument."
+			exit 1
+		fi
+		;;
+	--thp)
+		if [[ $# -gt 1 ]]; then
+			thp_config="$2"
+			shift 2
+		else
+			echo "Option --thp requires an argument. Default is $thp_config"
+			exit 1
+		fi
+		;;
+	--cmd)
+		if [[ $# -gt 1 ]]; then
+			command="$2"
+			shift 2
+		else
+			echo "Option --cmd. Default is $command"
+			exit 1
+		fi
+		;;
+	--out)
+		if [[ $# -gt 1 ]]; then
+			addrdump_bin_record="$2"
+			log_name="${addrdump_bin_record}.log"
+			shift 2
+		else
+			echo "Option --out requires an argument. Default is $addrdump_bin_record"
+			exit 1
+		fi
+		;;
+	--image)
+		if [[ $# -gt 1 ]]; then
+			image_path="$2"
+			shift 2
+		else
+			echo "Option --image requires an argument. Default is $image_path"
+			exit 1
+		fi
+		;;
+	--k_exec_only)
+		k_exec_only_val="1"
+		shift # past value
+		;;
+	--gdb)
+		gdb_flags+=("-s" "-S")
+		shift # past value
+		;;
+	--vm_server_port)
+		if [[ $# -gt 1 ]]; then
+			VM_SERVER_PORT="$2"
+			shift 2
+		else
+			echo "Option --vm_server_port requires an argument. Default is $VM_SERVER_PORT"
+			exit 1
+		fi
+		;;
+	--host_server_port)
+		if [[ $# -gt 1 ]]; then
+			HOST_SERVER_PORT="$2"
+			shift 2
+		else
+			echo "Option --host_server_port requires an argument. Default is $HOST_SERVER_PORT"
+			exit 1
+		fi
+		;;
+	--vm_logging_ctl_port)
+		if [[ $# -gt 1 ]]; then
+			VM_LOGGING_CTL_PORT="$2"
+			shift 2
+		else
+			echo "Option --vm_logging_ctl_port requires an argument. Default is $VM_LOGGING_CTL_PORT"
+			exit 1
+		fi
+		;;
+	--host_logging_ctl_port)
+		if [[ $# -gt 1 ]]; then
+			HOST_LOGGING_CTL_PORT="$2"
+			shift 2
+		else
+			echo "Option --host_logging_ctl_port requires an argument. Default is $HOST_LOGGING_CTL_PORT"
+			exit 1
+		fi
+		;;
+	--mmu)
+		# qemu_args+=("-d" "mmu" "-D" "mmu.log")
+		# qemu_args+=("-d" "plugin" "-D" "mmu.log")
+		logging_flags+=("-d" "mmu" "-D" "mmu.log")
+		# logging_flags+=("-d" "plugin,int,exec,in_asm,op_opt,out_asm" "-D" "mmu.log")
+		shift # past value
+		;;
+	--max-inst)
+		if [[ $# -gt 1 ]]; then
+			max_qemu_user_inst="$2"
+			shift 2
+		else
+			echo "Option --max-inst requires an argument. Default is $max_qemu_user_inst"
+			exit 1
+		fi
+		;;
+	--run-dynamorio) 
+		RUN_DYNAMORIO=true 
+		shift # past argument
+		;;
+	--dry)
+		DRY_RUN=true
+		shift # past argument
+		;; 
+	--default)
+		DEFAULT=YES
+		shift # past argument
+		;;
+	*)                  # unknown option
+		POSITIONAL+=("$1") # save it in an array for later
+		shift              # past argument
+		;;
+	esac
+done
+
+
+if [ "$arch" = "" ]; then
+	echo "Architecture is required. Use --arch [radix|ecpt]"
+	exit 1
+elif [ "$arch" = "radix" ]; then
+	qemu=$(realpath ../qemu_x86/build/qemu-system-x86_64)
+	qemu_plugin_addrdump=$(realpath ../qemu_x86/build/tests/plugin/libexeclog.so)
+elif [ "$arch" = "ecpt" ]; then
+	qemu=$(realpath ../qemu_ECPT/build/qemu-system-x86_64)
+	qemu_plugin_addrdump=$(realpath ../qemu_ECPT/build/tests/plugin/libexeclog.so)
+else
+	echo "Architecture $arch is not supported"
+	exit 1
+fi
+
+if [ "$log_name" = "" ]; then
+	log_name="${arch}.log"
+fi
+
+# leave here for future reference on how to run graphbig benchmark
+#START_COMMAND="cd rethinkVM_bench; ./run_scripts/${bench_torun};"
+get_mem_and_swap() {
+	local mem=$(free -m | awk 'NR==2{print $2}')
+	local swap=$(free -m | awk 'NR==3{print $2}')
+	local toal_mem_swap_5GB_round=$(((mem + swap) / (5 * 1024)))
+	local qemu_memory_limit=$((toal_mem_swap_5GB_round * 5 *  1024))
+	echo $qemu_memory_limit
+}
+
+qemu_memory_limit=$(get_mem_and_swap)
+echo $qemu_memory_limit
+
+echo "addrdump_bin_record: $addrdump_bin_record"
+addrdump_bin_record=$(realpath $addrdump_bin_record)
+
+if [ "$addrdump_bin_record" = "" ]; then
+	echo "Output file cannot be created."
+	exit 1
+fi
+
+# PROLOGUE="mount -t proc proc /proc; mount -t sysfs none /sys; mkdir /dev/pts; mount devpts /dev/pts -t devpts; busybox ifconfig eth0 127.0.0.1; busybox ip route add 224.0.0.0/4 dev eth0; busybox ifconfig lo 127.0.0.1; "
+FS_PROLOGUE="mount -t proc proc /proc; mount -t sysfs none /sys; mkdir /dev/pts; mount devpts /dev/pts -t devpts; mkdir /dev/shm; mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=16G tmpfs /dev/shm;"
+NETWORK_PROLOGUE="busybox ifconfig eth0 10.0.2.15 netmask 255.255.255.0 up; busybox ip route add default via 10.0.2.2; busybox ifconfig lo 127.0.0.1 up;"
+# PROLOGUE="mount -t proc proc /proc; mount -t sysfs none /sys; mkdir /dev/pts; mount devpts /dev/pts -t devpts; mkdir /dev/shm; mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=16G tmpfs /dev/shm; busybox ifconfig eth0 10.0.2.15 netmask 255.255.255.0 up; busybox ip route add default via 10.0.2.2; busybox ifconfig lo 127.0.0.1 up;"
+START_COMMAND=$command
+EPILOGUE="sync; bash; sleep 5; /shutdown;"
+# each argument that should be neccesarily seperated by space should be in a sperate "" item.
+# every thing within the comment will be treated as pure literal.
+qemu_args=(
+	"$qemu"
+	"-kernel" "arch/x86/boot/bzImage"
+	"-m" "${qemu_memory_limit}M"
+	"-display" "none"
+	"-hda" "${image_path}"
+	# "-drive" "file=/ubuntu22.04/image_full.ext4,format=raw"
+	# "-serial" "pipe:${PIPE_FILE_NAME}"
+	"-serial" "stdio"
+	"-icount" "shift=0" # icount mode to run with VM timing
+	"-append" "root=/dev/sda rw rootdelay=10 rootfstype=ext4 console=ttyS0,115200 earlyprintk=serial,ttyS0,115200 apic=verbose transparent_hugepage=${thp_config} init=/usr/bin/bash -- -c \"$FS_PROLOGUE $NETWORK_PROLOGUE $START_COMMAND $EPILOGUE /usr/bin/bash\""
+	"-plugin" "${qemu_plugin_addrdump},filename=${addrdump_bin_record},k_exec_only=${k_exec_only_val},max_inst=${max_qemu_user_inst}"
+	# "-netdev" "user,id=net0" 
+	# "-netdev" "user,id=net0,hostfwd=tcp::${HOST_SERVER_PORT}-:${VM_SERVER_PORT},hostfwd=tcp::${HOST_LOGGING_CTL_PORT}-:${VM_LOGGING_CTL_PORT}" 
+    # "-device" "virtio-net,netdev=net0" 
+	# "--trace" "guest_mem_before_exec"
+	# "-append" "init=/bin/sh console=ttyS0,115200 root=/dev/sda earlyprintk=serial,ttyS0,115200 apic=verbose"
+	# "-append" "init=/bin/sh console=ttyS0,115200 earlyprintk=serial,ttyS0,115200"
+	#	"-append" "init=/bin/sh console=ttyS0,115200 earlyprintk=dbgpa"
+	# "-d" "mmu" "-D" "mmu.log"
+	# "-nographic"
+	# "-singlestep"
+)
+
+qemu_args+=("${gdb_flags[@]}")
+qemu_args+=("${logging_flags[@]}")
+
+
+tee_args+=("tee" "$log_name")
+
+	# the command printed below can be copied into bash command and run without modification
+printf '%q ' "${qemu_args[@]}"
+# "|" needs to be %s. with %q it will printed with escape
+printf '%s ' "|"
+printf '%q ' "${tee_args[@]}"
+echo
+
+head_hash="$(git log -n 1 --pretty=format:"%h")"
+time=$(date -r vmlinux +"%Y-%m-%d-%H-%M-%S")
+vmlinux_path=${addrdump_bin_record}.vmlinux-${time}-${head_hash}
+
+if [ $DRY_RUN == "false" ]; then 
+	cp vmlinux ${vmlinux_path}
+
+	"${qemu_args[@]}" 2>&1 | "${tee_args[@]}"
+
+	sync
+	sleep 2
+fi 
+
+run_dynamorio() {
+
+	local input_file=$1
+	local output_file=$2
+
+	echo "input_file: ${input_file} output: ${output_file}" 
+
+	local dynamorio_script=""
+	local page_walk_latency_script=""
+
+	if [ "$arch" = "radix" ]; then
+		dynamorio_script="run_asplos_smalltlb_realpwc.sh"
+		page_walk_latency_script="calc_page_walk_latency.py"
+
+	elif [ "$arch" = "ecpt" ]; then
+		dynamorio_script="run_asplos_smalltlb_realpwc_correct_entry_only.sh"
+		page_walk_latency_script="ecpt_page_walk_latency.py"
+	else
+		echo "Architecture $arch is not supported"
+		exit 1
+	fi
+
+	local dynamorio_tag=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "^dynamorio" | head -n 1)
+	echo "dynamorio tag $dynamorio_tag"
+	
+	local prepare_cmd="cd /dynamorio; source source.sh; ./install.sh > /dev/null; file build/bin64/drrun"
+	local run_cmd="echo running; ./${dynamorio_script} --arch $arch --input-file /start_point${input_file} --output-file /start_point${output_file}"
+	
+	local container_name="dynamorio-$(basename $input_file)"
+	echo "container name: $container_name"
+	# note require user as docker user
+
+	if [ $DRY_RUN == "false" ]; then 
+		docker run --rm -d --name $container_name\
+			-v `pwd`:/dynamorio -v /:/start_point \
+			$dynamorio_tag \
+			bash -c "$prepare_cmd; $run_cmd"
+
+		docker logs -f $container_name 2>&1 | tee ${input_file}.dynamorio.log
+		docker wait $container_name
+
+		echo "Done! output: ${output_file}"
+
+		python3 ${page_walk_latency_script} --file ${output_file} --mem 184 --config real_app
+	else 
+		echo \
+			"docker run --rm -d --name $container_name"\
+				"-v `pwd`:/dynamorio -v /:/start_point" \
+				"$dynamorio_tag" \
+				"bash -c \"$prepare_cmd; $run_cmd\""
+
+		echo 
+
+		echo \
+			"python3 ${page_walk_latency_script} --file ${output_file} --mem 184 --config real_app"
+
+		echo 
+	fi 
+}
+
+
+if [ $RUN_DYNAMORIO == "true" ]; then 
+	cd ../dynamorio
+	run_dynamorio $addrdump_bin_record "${addrdump_bin_record}.dyna_asplos_smalltlb_config_realpwc.log" &
+	cd $LINUX_DIR
+fi
+
+# running analysis part
+if [ $DRY_RUN == "false" ]; then 
+	sleep 1
+	cd ../rethinkVM_bench
+	time python3 run_scripts/trace_to_flamegraph_inst.py \
+		--vmlinux ${vmlinux_path} \
+		--trace ${addrdump_bin_record} \
+		--arch $arch &
+else
+	echo
+	echo "python3 run_scripts/trace_to_flamegraph_inst.py" \
+		"--vmlinux ${vmlinux_path}" \
+		"--trace ${addrdump_bin_record}" \
+		"--arch $arch"
+
+fi
+
+wait

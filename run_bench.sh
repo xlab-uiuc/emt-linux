@@ -11,6 +11,7 @@ dry_run="false"
 LOADING_PHASE=false
 OUTPUT_DIR="benchmark_output"
 ARCH="radix"
+FLAVOR=""
 while [[ $# -gt 0 ]]; do
 	key="$1"
 
@@ -21,6 +22,15 @@ while [[ $# -gt 0 ]]; do
             shift 2
         else
             echo "Need a value for --arch"
+            exit 1
+        fi
+        ;;
+    --flavor)
+        if [[ $# -gt 1 ]]; then
+            FLAVOR="$2"
+            shift 2
+        else
+            echo "Need a value for --flavor"
             exit 1
         fi
         ;;
@@ -84,6 +94,7 @@ BENCHS=(
 # OUTPUT_DIR="/hdd/collect_trace_fast/${ARCH}"
 # OUTPUT_DIR="/data1/collect_trace_fast/${ARCH}"
 
+
 IMAGE_PATH_PREFIX=$(realpath ../image_record_loading.ext4)
 
 if [[ "$thp_config" != "never" && "$thp_config" != "always" ]]; then
@@ -117,7 +128,7 @@ if [ $LOADING_PHASE_END == true ]; then
     stage_str="loading_end"
 fi
 
-OUTPUT_DIR=${OUTPUT_DIR}/$ARCH/${stage_str}
+OUTPUT_DIR=${OUTPUT_DIR}/${ARCH}_${FLAVOR}/${stage_str}
 mkdir -p $OUTPUT_DIR
 
 

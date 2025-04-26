@@ -278,7 +278,9 @@ run_dynamorio() {
 	if [ "$arch" = "radix" ]; then
 		dynamorio_script="run_asplos_smalltlb_realpwc.sh"
 		page_walk_latency_script="calc_page_walk_latency.py"
-
+	elif [ "$arch" = "fpt" ]; then
+		dynamorio_script="run_asplos_smalltlb_realpwc.sh"
+		page_walk_latency_script="calc_page_walk_latency.py"
 	elif [ "$arch" = "ecpt" ]; then
 		dynamorio_script="run_asplos_smalltlb_realpwc_correct_entry_only.sh"
 		page_walk_latency_script="ecpt_page_walk_latency.py"

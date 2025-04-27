@@ -169,11 +169,11 @@ if [ "$arch" = "" ]; then
 	echo "Architecture is required. Use --arch [radix|ecpt]"
 	exit 1
 elif [ "$arch" = "radix" ]; then
-	qemu=$(realpath ../qemu_x86/build/qemu-system-x86_64)
-	qemu_plugin_addrdump=$(realpath ../qemu_x86/build/tests/plugin/libexeclog.so)
+	qemu=$(realpath ../qemu-radix/build/qemu-system-x86_64)
+	qemu_plugin_addrdump=$(realpath ../qemu-radix/build/tests/plugin/libexeclog.so)
 elif [ "$arch" = "ecpt" ]; then
-	qemu=$(realpath ../qemu_ECPT/build/qemu-system-x86_64)
-	qemu_plugin_addrdump=$(realpath ../qemu_ECPT/build/tests/plugin/libexeclog.so)
+	qemu=$(realpath ../qemu-ecpt/build/qemu-system-x86_64)
+	qemu_plugin_addrdump=$(realpath ../qemu-ecpt/build/tests/plugin/libexeclog.so)
 else
 	echo "Architecture $arch is not supported"
 	exit 1
@@ -184,7 +184,7 @@ if [ "$log_name" = "" ]; then
 fi
 
 # leave here for future reference on how to run graphbig benchmark
-#START_COMMAND="cd rethinkVM_bench; ./run_scripts/${bench_torun};"
+#START_COMMAND="cd VM-Bench; ./run_scripts/${bench_torun};"
 get_mem_and_swap() {
 	local mem=$(free -m | awk 'NR==2{print $2}')
 	local swap=$(free -m | awk 'NR==3{print $2}')
@@ -332,7 +332,7 @@ fi
 # running analysis part
 if [ $DRY_RUN == "false" ]; then 
 	sleep 1
-	cd ../rethinkVM_bench
+	cd ../VM-Bench
 	time python3 run_scripts/trace_to_flamegraph_inst.py \
 		--vmlinux ${vmlinux_path} \
 		--trace ${addrdump_bin_record} \

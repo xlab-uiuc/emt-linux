@@ -131,7 +131,7 @@ do
     # log saved to ${OUTPUT_DIR}/${FILE_PREFIX}_walk_log.bin.log"
 
 
-    COMMAND="cd rethinkVM_bench; ./run_scripts/simulation/${bench}.sh ${recording_stage};"
+    COMMAND="cd rethinkVM_bench; ./run_scripts/simulation/${bench}.sh ${recording_stage}; /shutdown;"
     echo "run_linux_free_cmd --arch $ARCH --thp $thp_config --cmd ${COMMAND} --out ${OUTPUT_DIR}/${FILE_PREFIX}_walk_log.bin --image $image_path --run-dynamorio"
     # do_task $bench &
     if [ "$dry_run" = "false" ]; then

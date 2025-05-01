@@ -129,8 +129,8 @@ if [ $LOADING_PHASE_END == true ]; then
 fi
 
 OUTPUT_DIR=${OUTPUT_DIR}/${ARCH}_${FLAVOR}/${stage_str}
-mkdir -p $OUTPUT_DIR
-
+sudo mkdir -p $OUTPUT_DIR
+sudo chmod 777 $OUTPUT_DIR
 
 N_REP=1
 for bench in "${BENCHS[@]}"

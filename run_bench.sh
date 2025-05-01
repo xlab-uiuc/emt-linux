@@ -9,6 +9,7 @@ thp_config=""
 dry_run="false"
 
 LOADING_PHASE=false
+LOADING_PHASE_END=false
 OUTPUT_DIR="benchmark_output"
 ARCH="radix"
 FLAVOR=""

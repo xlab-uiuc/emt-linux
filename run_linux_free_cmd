@@ -272,13 +272,12 @@ run_dynamorio() {
 	local dynamorio_script=""
 	local page_walk_latency_script=""
 
+	page_walk_latency_script="ipc_with_inst_fpt.py"
 	if [ "$arch" = "radix" ]; then
 		dynamorio_script="run_asplos_smalltlb_realpwc.sh"
-		page_walk_latency_script="calc_page_walk_latency.py"
 
 	elif [ "$arch" = "ecpt" ]; then
 		dynamorio_script="run_asplos_smalltlb_realpwc_correct_entry_only.sh"
-		page_walk_latency_script="ecpt_page_walk_latency.py"
 	else
 		echo "Architecture $arch is not supported"
 		exit 1
@@ -305,7 +304,7 @@ run_dynamorio() {
 
 		echo "Done! output: ${output_file}"
 
-		python3 ${page_walk_latency_script} --file ${output_file} --mem 184 --config real_app
+		python3 ${page_walk_latency_script} --single ${output_file} --arch ${arch} --out ${output_file}_analysis.csv
 	else 
 		echo \
 			"docker run --rm -d --name $container_name"\
@@ -316,7 +315,7 @@ run_dynamorio() {
 		echo 
 
 		echo \
-			"python3 ${page_walk_latency_script} --file ${output_file} --mem 184 --config real_app"
+			"python3 ${page_walk_latency_script} --single ${output_file} --arch ${arch} --out ${output_file}_analysis.csv"
 
 		echo 
 	fi 

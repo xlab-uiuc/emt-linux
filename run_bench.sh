@@ -144,10 +144,10 @@ do
 
 
     COMMAND="cd rethinkVM_bench; ./run_scripts/simulation/${bench}.sh ${recording_stage}; /shutdown;"
-    echo "run_linux_free_cmd --arch $ARCH --thp $thp_config --cmd ${COMMAND} --out ${OUTPUT_DIR}/${FILE_PREFIX}_walk_log.bin --image $image_path --run-dynamorio"
+    echo "run_linux_free_cmd --arch $ARCH --flavor $FLAVOR --thp $thp_config --cmd ${COMMAND} --out ${OUTPUT_DIR}/${FILE_PREFIX}_walk_log.bin --image $image_path --run-dynamorio"
     # do_task $bench &
     if [ "$dry_run" = "false" ]; then
-        ./run_linux_free_cmd --arch $ARCH --thp $thp_config --cmd "${COMMAND}" --out ${OUTPUT_DIR}/${FILE_PREFIX}_walk_log.bin --image $image_path --run-dynamorio &
+        ./run_linux_free_cmd --arch $ARCH --flavor $FLAVOR --thp $thp_config --cmd "${COMMAND}" --out ${OUTPUT_DIR}/${FILE_PREFIX}_walk_log.bin --image $image_path --run-dynamorio &
     fi
     
     rep=$(( (rep + 1) % N_REP ))

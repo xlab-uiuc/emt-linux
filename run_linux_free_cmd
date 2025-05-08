@@ -346,3 +346,6 @@ else
 fi
 
 wait
+
+rm -f ${addrdump_bin_record}.xz
+xz --threads=16 --verbose ${addrdump_bin_record}
